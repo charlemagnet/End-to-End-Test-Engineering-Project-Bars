@@ -25,3 +25,29 @@ def calculate_dynamic_price(class_type, hour):
     else:
         return base_price
     
+def calculate_refund(class_type, entrances):
+    base_price = get_base_price(class_type)
+    
+    # return 0 for invalid
+    if base_price is None:
+        return 0
+        
+    
+    if entrances < 2:
+        return base_price 
+    
+    # Refund amounts
+    refund_rates = {
+        "Yoga": 0.30,
+        "Boxing": 0.50,
+        "Fitness": 0.10,
+        "Basketball": 0.40,
+        "Tenis": 0.80,
+        "Swimming": 0.15
+    }
+    
+    # Take ratio
+    rate = refund_rates.get(class_type, 0)
+    
+    return base_price * rate
+    
