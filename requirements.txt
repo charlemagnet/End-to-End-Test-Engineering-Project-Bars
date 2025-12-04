@@ -1,0 +1,36 @@
+# --- Web Framework & API (Projenin İskeleti) ---
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.6.0
+pydantic-settings>=2.2.0
+
+# --- Database (Veritabanı İşlemleri) ---
+# SQLite kullanacağımız için ekstra driver gerekmez ama ORM için:
+sqlalchemy>=2.0.0
+
+# --- Unit Testing & Mocking (Temel Testler) ---
+# [PDF Madde 5.2] Unit Testing ve Mocking için standart
+pytest>=8.0.0
+pytest-mock>=3.12.0
+requests>=2.31.0  # Testlerde API istekleri atmak için
+
+# --- Coverage Reporting (Kapsama Raporları) ---
+# [PDF Madde 5.3] Coverage.py kullanan pytest eklentisi
+pytest-cov>=4.1.0
+
+# --- Mutation Testing (Mutasyon Testi) ---
+# [PDF Madde 5.3] Kodunuza yapay hatalar sokup testlerin kalitesini ölçer
+mutmut>=2.4.4
+
+# --- Property-Based Testing (Özellik Tabanlı Test) ---
+# [PDF Madde 5.6] Rastgele verilerle kodu zorlamak için (QuickCheck alternatifi)
+hypothesis>=6.98.0
+
+# --- Performance / Load Testing (Yük Testi) ---
+# [PDF Madde 5.7] Sisteme yük bindirmek için Python tabanlı araç
+locust>=2.24.0
+
+# --- Security & Code Quality (Bonus/Güvenlik) ---
+# [PDF Madde 5.9] Güvenlik açıkları için statik analiz (OWASP ZAP öncesi hazırlık)
+bandit>=1.7.7
+httpx>=0.27.0  # FastAPI TestClient için gerekli modern istemci
