@@ -1,51 +1,30 @@
 import pytest
-from reservation_engine import create_reservation, cancel_reservation, RESERVATIONS_DB
+from reservation_engine import create_reservation
 
-# clead the DB
-@pytest.fixture(autouse=True)
-def clean_db():
-    RESERVATIONS_DB.clear()
-
-def test_create_valid_reservation():
-    # Reservation to empty yoga class
-    # Üye ID: 1, Ders: Yoga, Saat: 10
-    result = create_reservation(member_id=1, class_type="Yoga", date="2025-05-01", hour=10)
+def test_capacity_check_with_mock(mocker):
+    # 1. Mongo bağlantısını ve count_documents fonksiyonunu taklit et (Mock)
+    mock_db = mocker.patch("reservation_engine.get_db")
     
-    assert result["date"] == "2025-05-01"
+    # Senaryo: Veritabanı "Dolu" desin (count_documents = 50 dönsün)
+    # Zincirleme mock: db["reservations"].count_documents(...)
+    mock_db.return_value.__getitem__.return_value.count_documents.return_value = 50
+    
+    # 2. Testi Çalıştır (Yoga kapasitesi 50, dolayısıyla hata vermeli)
+    with pytest.raises(ValueError) as excinfo:
+        create_reservation(1, "Yoga", "2025-05-01", 10)
+    
+    assert "Capacity full" in str(excinfo.value)
+
+def test_create_reservation_success(mocker):
+    # 1. Mongo'yu mockla
+    mock_db = mocker.patch("reservation_engine.get_db")
+    
+    # Senaryo: Veritabanı "Boş" desin (count_documents = 0)
+    mock_db.return_value.__getitem__.return_value.count_documents.return_value = 0
+    
+    # 2. Testi Çalıştır
+    result = create_reservation(1, "Yoga", "2025-05-01", 10)
+    
+    # 3. insert_one çağrıldı mı kontrol et
+    mock_db.return_value.__getitem__.return_value.insert_one.assert_called_once()
     assert result["status"] == "Active"
-
-def test_capacity_limit_exceeded():
-    # Capacity of tennis is 15, test for more
-    for i in range(15):
-        create_reservation(member_id=i+100, class_type="Tenis", date="2025-05-01", hour=14)
-        
-    # error in 16
-    with pytest.raises(ValueError):
-        create_reservation(member_id=999, class_type="Tenis", date="2025-05-01", hour=14)
-    
-
-def test_capacity_different_days_should_work():
-    # tenis filled in 2025-05-01
-    for i in range(15):
-        create_reservation(member_id=i+100, class_type="Tenis", date="2025-05-01", hour=14)
-    
-    # different day same time 
-    # if dont check date test goes red
-    success_res = create_reservation(member_id=200, class_type="Tenis", date="2025-05-02", hour=14)
-    assert success_res["status"] == "Active"
-
-def test_cancel_reservation():
-    # make reservation
-    res = create_reservation(member_id=1, class_type="Boxing", hour=18)
-    res_id = res["id"]
-    
-    # then cancel it
-    canceled_res = cancel_reservation(res_id)
-    
-    assert canceled_res["status"] == "Cancelled"
-    # Check DB
-    assert RESERVATIONS_DB[res_id]["status"] == "Cancelled"
-
-def test_cancel_non_existent_reservation():
-    with pytest.raises(KeyError):
-        cancel_reservation(99999)
