@@ -1,104 +1,152 @@
-# main.py - MONGODB SÜRÜMÜ
-from fastapi import FastAPI, HTTPException, Body
-from pydantic import BaseModel, Field, BeforeValidator
-from typing import Optional, Annotated, List
-from bson import ObjectId
+# main.py - FINAL SÜRÜM
+from fastapi import FastAPI, HTTPException, status, Query
+from pydantic import BaseModel
+from typing import Optional
 
-# Import hatası alırsan bu dosyanın main.py ile aynı klasörde olduğundan emin ol
-from pricing_engine import calculate_dynamic_price, calculate_refund
-# database.py dosyasını oluşturduğunu varsayıyorum
-from database import reservations_collection 
+# Engine dosyalarınızdan fonksiyonları çekiyoruz
+from pricing_engine import calculate_dynamic_price, calculate_refund, get_base_price
+from members_engine import create_member, get_member
+from reservation_engine import create_reservation, cancel_reservation
 
 app = FastAPI(
-    title="Fitness Center API (NoSQL)",
-    description="Dynamic Pricing and Reservation Service with MongoDB"
+    title="Fitness Center API",
+    description="End-to-End Test Engineering Project API with MongoDB",
+    version="2.0.0"
 )
 
-# Kapasite Ayarları
-CAPACITIES = {
-    "Yoga": 50, "Boxing": 40, "Fitness": 250,
-    "Basketball": 20, "Tennis": 15, "Tenis": 15, "Swimming": 30
-}
+# --- PYDANTIC MODELLERİ (Veri Doğrulama) ---
 
-# --- Pydantic Modelleri ---
-PyObjectId = Annotated[str, BeforeValidator(str)]
+class MemberRequest(BaseModel):
+    name: str
+    membership_type: str  # Valid: Yoga, Boxing, Fitness, Basketball, Tenis, Swimming
 
-class ReservationModel(BaseModel):
-    id: Optional[PyObjectId] = Field(alias="_id", default=None)
+class ReservationRequest(BaseModel):
+    member_id: int
     class_type: str
-    member_name: str
     date: str  # Format: "YYYY-MM-DD"
+    hour: int  # 0-23
+
+class PriceResponse(BaseModel):
+    class_type: str
     hour: int
-    price: Optional[float] = None
-    status: str = "Active"
+    estimated_price: float
+    currency: str = "USD"
 
-    class Config:
-        populate_by_name = True
-        json_schema_extra = {
-            "example": {
-                "class_type": "Yoga",
-                "member_name": "Mehmet Yilmaz",
-                "date": "2025-10-18",
-                "hour": 14
-            }
-        }
+# --- 1. GENEL ENDPOINTLER (Tags: General) ---
 
-# --- Endpointler ---
-
-@app.get("/")
+@app.get("/", tags=["General"])
 def read_root():
-    return {"message": "API Calisiyor (MongoDB Baglantili)"}
+    return {"message": "CEN315 Test Engineering API is Online 🟢"}
 
-@app.post("/reservations", response_model=ReservationModel, status_code=201)
-def create_reservation(reservation: ReservationModel):
-    # 1. Kapasite Kontrolü
-    max_capacity = CAPACITIES.get(reservation.class_type)
-    if not max_capacity:
-        raise HTTPException(status_code=400, detail="Gecersiz ders tipi.")
-
-    # MongoDB'den doluluk oranını sorgula
-    current_count = reservations_collection.count_documents({
-        "class_type": reservation.class_type,
-        "date": reservation.date,
-        "hour": reservation.hour,
-        "status": "Active"
-    })
-
-    if current_count >= max_capacity:
-        raise HTTPException(status_code=400, detail=f"Kontenjan Dolu! ({current_count}/{max_capacity})")
-
-    # 2. Fiyat Hesaplama
-    # Burada hata alıyorsan pricing_engine.py kaydedilmemiştir!
-    calculated_price = calculate_dynamic_price(reservation.class_type, reservation.hour)
-    if calculated_price is None:
-        raise HTTPException(status_code=400, detail="Fiyat hesaplanamadi.")
-
-    # 3. Kayıt
-    new_reservation = reservation.model_dump(by_alias=True, exclude=["id"])
-    new_reservation["price"] = round(calculated_price, 2)
-    new_reservation["status"] = "Active"
-
-    insert_result = reservations_collection.insert_one(new_reservation)
+@app.get("/price/{class_type}/{hour}", tags=["General"], response_model=PriceResponse)
+def check_price(class_type: str, hour: int):
+    """
+    Rezervasyon öncesi fiyat sorgulama.
+    """
+    price = calculate_dynamic_price(class_type, hour)
+    if price is None:
+        raise HTTPException(status_code=404, detail="Class type not found")
     
-    created_reservation = reservations_collection.find_one(
-        {"_id": insert_result.inserted_id}
-    )
-    return created_reservation
+    return {
+        "class_type": class_type,
+        "hour": hour,
+        "estimated_price": round(price, 2)
+    }
 
-@app.post("/reservations/{reservation_id}/cancel")
-def cancel_reservation(reservation_id: str, entrances_used: int = Body(..., embed=True)):
-    if not ObjectId.is_valid(reservation_id):
-        raise HTTPException(status_code=400, detail="Gecersiz ID formati")
+# --- 2. ÜYELİK YÖNETİMİ (Tags: Members) ---
 
-    reservation = reservations_collection.find_one({"_id": ObjectId(reservation_id)})
-    if not reservation:
-        raise HTTPException(status_code=404, detail="Rezervasyon bulunamadi")
+@app.post("/members", status_code=status.HTTP_201_CREATED, tags=["Members"])
+def register_new_member(member: MemberRequest):
+    """
+    Yeni üye kaydeder. (MongoDB)
+    """
+    import random
+    new_id = random.randint(1000, 9999) # Simülasyon ID
+    
+    try:
+        result = create_member(new_id, member.name, member.membership_type)
+        # MongoDB _id nesnesini string'e veya int'e çevirip dönmek daha güvenlidir
+        result["_id"] = str(result["_id"]) 
+        return {
+            "message": "User registered successfully",
+            "member_id": new_id,
+            "data": result
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
-    refund = calculate_refund(reservation["class_type"], entrances_used)
+@app.get("/members/{member_id}", tags=["Members"])
+def get_member_profile(member_id: int):
+    """
+    Üye bilgilerini getirir.
+    """
+    member = get_member(member_id)
+    if member is None:
+        raise HTTPException(status_code=404, detail="Member not found")
+    
+    # Mongo ObjectId serileştirme hatası olmaması için
+    if "_id" in member:
+        member["_id"] = str(member["_id"])
+        
+    return member
 
-    reservations_collection.update_one(
-        {"_id": ObjectId(reservation_id)},
-        {"$set": {"status": "Cancelled"}}
-    )
+# --- 3. REZERVASYON YÖNETİMİ (Tags: Reservations) ---
 
-    return {"status": "success", "refund": refund}
+@app.post("/reservations", status_code=status.HTTP_201_CREATED, tags=["Reservations"])
+def make_reservation(request: ReservationRequest):
+    """
+    Yeni rezervasyon oluşturur. Kapasite ve Tarih kontrolü yapar.
+    """
+    # 1. Üye kontrolü
+    member = get_member(request.member_id)
+    if not member:
+        raise HTTPException(status_code=404, detail="Member not found. Please register first.")
+
+    # 2. Ders tipi kontrolü
+    if get_base_price(request.class_type) is None:
+        raise HTTPException(status_code=400, detail="Invalid class type.")
+
+    try:
+        # 3. Rezervasyon ve Kapasite
+        reservation = create_reservation(
+            member_id=request.member_id,
+            class_type=request.class_type,
+            date=request.date,
+            hour=request.hour
+        )
+        
+        # 4. Fiyat Bilgisi Ekleme
+        price = calculate_dynamic_price(request.class_type, request.hour)
+        reservation["price"] = round(price, 2)
+        
+        # Mongo ID temizliği
+        if "_id" in reservation:
+            reservation["_id"] = str(reservation["_id"])
+            
+        return reservation
+
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.delete("/reservations/{reservation_id}", tags=["Reservations"])
+def delete_reservation(reservation_id: int, entrances_used: int = 0):
+    """
+    Rezervasyonu iptal eder (DELETE).
+    İade tutarını hesaplar.
+    """
+    try:
+        # İptal işlemi
+        reservation = cancel_reservation(reservation_id)
+        
+        # İade hesabı
+        refund = calculate_refund(reservation["class_type"], entrances_used)
+        
+        return {
+            "status": "cancelled",
+            "reservation_id": reservation_id,
+            "refund_amount": round(refund, 2),
+            "info": "Refund calculated based on usage."
+        }
+        
+    except KeyError:
+        raise HTTPException(status_code=404, detail="Reservation ID not found.")
