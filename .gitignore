@@ -1,0 +1,51 @@
+# --- GÜVENLİK (EN ÖNEMLİSİ) ---
+.env
+.env.*
+*.key
+*.pem
+secrets.json
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.manifest
+*.spec
+
+# --- Sanal Ortam (Virtual Environment) ---
+venv/
+.venv/
+env/
+ENV/
+
+# --- IDE Ayarları (Bunu kimse görmek istemez) ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- Veritabanı (Veriler GitHub'a atılmaz!) ---
+*.db
+*.sqlite3
+mongo_data/
+db_data/
+dump/
+
+# --- Test ve Coverage Raporları ---
+.coverage
+htmlcov/
+.pytest_cache/
+coverage.xml
+
+# --- İşletim Sistemi Çöpleri ---
+.DS_Store
+Thumbs.db
+
+# --- Loglar ---
+*.log
+logs/
+
+# --- Postman (Environment içinde şifre varsa atma) ---
+# Eğer sadece koleksiyon ise atabilirsin ama environment dosyalarını engelle:
+*postman_environment.json
+*postman_globals.json
