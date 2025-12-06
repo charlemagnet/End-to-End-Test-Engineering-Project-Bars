@@ -9,16 +9,24 @@
         .container { background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 400px; }
         h2 { text-align: center; color: #2c3e50; }
         .tab { display: flex; justify-content: space-around; margin-bottom: 20px; border-bottom: 2px solid #eee; }
-        .tab button { background: none; border: none; padding: 10px; cursor: pointer; font-size: 16px; color: #7f8c8d; font-weight: bold; }
+        .tab button { background: none; border: none; padding: 10px; cursor: pointer; font-size: 14px; color: #7f8c8d; font-weight: bold; }
         .tab button.active { color: #3498db; border-bottom: 2px solid #3498db; }
+        .tab button.active-cancel { color: #e74c3c; border-bottom: 2px solid #e74c3c; } /* İptal için kırmızı stil */
+        
         .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; color: #34495e; }
+        label { display: block; margin-bottom: 5px; color: #34495e; font-size: 0.9em; }
         input, select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 5px; box-sizing: border-box; }
+        
         button.action-btn { width: 100%; padding: 10px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px; transition: background 0.3s; }
         button.action-btn:hover { background-color: #2980b9; }
+        
+        button.cancel-btn { background-color: #e74c3c; }
+        button.cancel-btn:hover { background-color: #c0392b; }
+
         #message { margin-top: 15px; padding: 10px; border-radius: 5px; display: none; text-align: center; font-size: 14px; }
         .success { background-color: #d4edda; color: #155724; }
         .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #cce5ff; color: #004085; }
         .hidden { display: none; }
     </style>
 </head>
@@ -30,7 +38,7 @@
     <div class="tab">
         <button class="active" onclick="showTab('register')">Kayıt Ol</button>
         <button onclick="showTab('booking')">Rezervasyon</button>
-    </div>
+        <button onclick="showTab('cancel')">İptal Et</button> </div>
 
     <div id="register-section">
         <div class="form-group">
@@ -78,6 +86,20 @@
         <button class="action-btn" style="background-color: #27ae60;" onclick="makeReservation()">Rezervasyon Yap</button>
     </div>
 
+    <div id="cancel-section" class="hidden">
+        <div class="form-group">
+            <label style="color:#c0392b">İptal Edilecek Rezervasyon ID</label>
+            <input type="number" id="cancelResId" placeholder="Rezervasyon ID girin">
+            <small style="color:#666; font-size:11px;">Rezervasyon yapınca size verilen ID</small>
+        </div>
+        <div class="form-group">
+            <label>Kaç kere giriş yapıldı?</label>
+            <input type="number" id="entrancesUsed" value="0" min="0">
+            <small style="color:#666; font-size:11px;">İade oranını etkiler (2 girişten az ise %100 iade)</small>
+        </div>
+        <button class="action-btn cancel-btn" onclick="cancelReservation()">Rezervasyonu İptal Et</button>
+    </div>
+
     <div id="message"></div>
 </div>
 
@@ -85,17 +107,28 @@
     const API_URL = "http://127.0.0.1:8000";
 
     function showTab(tabName) {
+        // Tüm bölümleri gizle
         document.getElementById('register-section').classList.add('hidden');
         document.getElementById('booking-section').classList.add('hidden');
-        document.querySelector('.tab button:nth-child(1)').classList.remove('active');
-        document.querySelector('.tab button:nth-child(2)').classList.remove('active');
+        document.getElementById('cancel-section').classList.add('hidden');
+        
+        // Tab renklerini sıfırla
+        const buttons = document.querySelectorAll('.tab button');
+        buttons.forEach(btn => {
+            btn.classList.remove('active');
+            btn.classList.remove('active-cancel');
+        });
 
+        // İlgili bölümü aç
         if(tabName === 'register') {
             document.getElementById('register-section').classList.remove('hidden');
-            document.querySelector('.tab button:nth-child(1)').classList.add('active');
-        } else {
+            buttons[0].classList.add('active');
+        } else if (tabName === 'booking') {
             document.getElementById('booking-section').classList.remove('hidden');
-            document.querySelector('.tab button:nth-child(2)').classList.add('active');
+            buttons[1].classList.add('active');
+        } else {
+            document.getElementById('cancel-section').classList.remove('hidden');
+            buttons[2].classList.add('active-cancel');
         }
         hideMessage();
     }
@@ -114,7 +147,7 @@
             
             if (response.ok) {
                 showMessage(`✅ Kayıt Başarılı! Üye ID: <b>${data.member_id}</b> <br> (Bunu not edin!)`, 'success');
-                document.getElementById('bookMemberId').value = data.member_id; // Otomatik doldur
+                document.getElementById('bookMemberId').value = data.member_id; 
             } else {
                 showMessage(`❌ Hata: ${data.detail}`, 'error');
             }
@@ -143,9 +176,39 @@
             const data = await response.json();
 
             if (response.ok) {
-                showMessage(`🎉 Rezervasyon Oluşturuldu! <br> Fiyat: <b>$${data.price}</b>`, 'success');
+                // MongoDB _id string olarak gelebilir, onu alıyoruz
+                let resId = data.id || data._id; 
+                showMessage(`🎉 Rezervasyon NO: <b>${resId}</b> <br> Fiyat: $${data.price} <br> (İptal için bu numarayı saklayın)`, 'success');
+                // İptal sekmesine otomatik doldur
+                document.getElementById('cancelResId').value = resId;
             } else {
                 showMessage(`⚠️ Başarısız: ${data.detail}`, 'error');
+            }
+        } catch (error) {
+            showMessage(`❌ Bağlantı Hatası: ${error}`, 'error');
+        }
+    }
+
+    async function cancelReservation() {
+        const resId = document.getElementById('cancelResId').value;
+        const entrances = document.getElementById('entrancesUsed').value;
+
+        if (!resId) {
+            showMessage("Lütfen Rezervasyon ID giriniz.", "error");
+            return;
+        }
+
+        try {
+            // DELETE isteği atıyoruz
+            const response = await fetch(`${API_URL}/reservations/${resId}?entrances_used=${entrances}`, {
+                method: 'DELETE'
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                showMessage(`🗑️ İptal Başarılı! <br> İade Tutarı: <b>$${data.refund_amount}</b>`, 'info');
+            } else {
+                showMessage(`❌ İptal Edilemedi: ${data.detail}`, 'error');
             }
         } catch (error) {
             showMessage(`❌ Bağlantı Hatası: ${error}`, 'error');
@@ -163,7 +226,6 @@
         document.getElementById('message').style.display = 'none';
     }
     
-    // Tarih alanına bugünü otomatik koy
     document.getElementById('bookDate').valueAsDate = new Date();
 </script>
 
