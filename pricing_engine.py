@@ -4,7 +4,7 @@ def get_base_price(class_type):
         "Boxing": 120,
         "Fitness": 80,
         "Basketball": 40,
-        "Tenis": 90, 
+        "Tennis": 90, 
         "Swimming": 30
     }
     return prices.get(class_type)
@@ -42,7 +42,7 @@ def calculate_refund(class_type, entrances):
         "Boxing": 0.50,
         "Fitness": 0.10,
         "Basketball": 0.40,
-        "Tenis": 0.80,
+        "Tennis": 0.80,
         "Swimming": 0.15
     }
     
