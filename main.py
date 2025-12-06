@@ -1,9 +1,8 @@
-# main.py - FINAL SÜRÜM
 from fastapi import FastAPI, HTTPException, status, Query
 from pydantic import BaseModel
 from typing import Optional
-from fastapi.staticfiles import StaticFiles  # <-- YENİ EKLENDİ
-from fastapi.responses import FileResponse   # <-- YENİ EKLENDİ
+from fastapi.staticfiles import StaticFiles  
+from fastapi.responses import FileResponse   
 
 # Engine dosyalarınızdan fonksiyonları çekiyoruz
 from pricing_engine import calculate_dynamic_price, calculate_refund, get_base_price
@@ -35,7 +34,7 @@ class PriceResponse(BaseModel):
     estimated_price: float
     currency: str = "USD"
 
-# --- 1. GENEL ENDPOINTLER (Tags: General) ---
+# --- 1. GENERAL ENDPOINTS
 @app.get("/ui", include_in_schema=False)
 def read_ui():
     return FileResponse('static/index.html')
@@ -47,7 +46,7 @@ def read_root():
 @app.get("/price/{class_type}/{hour}", tags=["General"], response_model=PriceResponse)
 def check_price(class_type: str, hour: int):
     """
-    Rezervasyon öncesi fiyat sorgulama.
+    check before rezervation
     """
     price = calculate_dynamic_price(class_type, hour)
     if price is None:
@@ -59,15 +58,15 @@ def check_price(class_type: str, hour: int):
         "estimated_price": round(price, 2)
     }
 
-# --- 2. ÜYELİK YÖNETİMİ (Tags: Members) ---
+# --- 2. Member Management
 
 @app.post("/members", status_code=status.HTTP_201_CREATED, tags=["Members"])
 def register_new_member(member: MemberRequest):
     """
-    Yeni üye kaydeder. (MongoDB)
+    Save new member. (MongoDB)
     """
     import random
-    new_id = random.randint(1000, 9999) # Simülasyon ID
+    new_id = random.randint(1000, 9999) # Sımilation ID
     
     try:
         result = create_member(new_id, member.name, member.membership_type)
@@ -84,7 +83,7 @@ def register_new_member(member: MemberRequest):
 @app.get("/members/{member_id}", tags=["Members"])
 def get_member_profile(member_id: int):
     """
-    Üye bilgilerini getirir.
+    Bring the new member
     """
     member = get_member(member_id)
     if member is None:
@@ -101,7 +100,7 @@ def get_member_profile(member_id: int):
 @app.post("/reservations", status_code=status.HTTP_201_CREATED, tags=["Reservations"])
 def make_reservation(request: ReservationRequest):
     """
-    Yeni rezervasyon oluşturur. Kapasite ve Tarih kontrolü yapar.
+    Make new rezervations
     """
     # 1. Üye kontrolü
     member = get_member(request.member_id)
@@ -137,8 +136,7 @@ def make_reservation(request: ReservationRequest):
 @app.delete("/reservations/{reservation_id}", tags=["Reservations"])
 def delete_reservation(reservation_id: int, entrances_used: int = 0):
     """
-    Rezervasyonu iptal eder (DELETE).
-    İade tutarını hesaplar.
+    Cancel rezervations
     """
     try:
         # İptal işlemi
