@@ -1,29 +1,24 @@
-# We used in-memory before mongo
-MEMBERS_DB = {}
+from database import get_db
 
-VALID_MEMBERSHIP_TYPES = [
-    "Yoga",
-    "Boxing",
-    "Fitness",
-    "Basketball",
-    "Tenis",
-    "Swimming"
-]
+VALID_MEMBERSHIP_TYPES = ["Yoga", "Boxing", "Fitness", "Basketball", "Tenis", "Swimming"]
 
 def create_member(member_id, name, membership_type):
-    # Tip kontrolü
     if membership_type not in VALID_MEMBERSHIP_TYPES:
-        raise ValueError(f"Invalid membership type. Valid types are: {VALID_MEMBERSHIP_TYPES}")
+        raise ValueError(f"Invalid membership type. Valid: {VALID_MEMBERSHIP_TYPES}")
     
-    member = {
-        "id": member_id,
+    db = get_db()
+    members_collection = db["members"]
+    
+    member_data = {
+        "_id": member_id, # Mongo ID olarak kullanıyoruz
         "name": name,
         "type": membership_type
     }
     
-    # Kayıt
-    MEMBERS_DB[member_id] = member
-    return member
+    # Mongo'ya kaydet
+    members_collection.insert_one(member_data)
+    return member_data
 
 def get_member(member_id):
-    return MEMBERS_DB.get(member_id)
+    db = get_db()
+    return db["members"].find_one({"_id": member_id})

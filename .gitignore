@@ -6,7 +6,7 @@
 secrets.json
 
 # --- Python ---
-__pycache__/
+_pycache_/
 *.py[cod]
 *$py.class
 *.manifest
@@ -37,15 +37,3 @@ htmlcov/
 .pytest_cache/
 coverage.xml
 
-# --- İşletim Sistemi Çöpleri ---
-.DS_Store
-Thumbs.db
-
-# --- Loglar ---
-*.log
-logs/
-
-# --- Postman (Environment içinde şifre varsa atma) ---
-# Eğer sadece koleksiyon ise atabilirsin ama environment dosyalarını engelle:
-*postman_environment.json
-*postman_globals.json
