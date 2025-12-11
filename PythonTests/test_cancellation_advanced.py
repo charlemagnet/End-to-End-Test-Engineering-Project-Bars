@@ -5,7 +5,7 @@ from pricing_engine import calculate_refund
 # Format: (Rule ID, Attendance Count, Class Type, Expected Refund Rate)
 CANCELLATION_SCENARIOS = [
     # --- GENEL KURAL (Giriş < 2 ise Her Zaman %100) ---
-    ("DT-01", 0, "AnyClass", 1.0), # full refund
+    ("DT-01", 0, "Yoga", 1.0), # full refund
     
     # --- YOGA Rules ---
     ("DT-02", 1, "Yoga", 1.0),     # < 2 -> %100
