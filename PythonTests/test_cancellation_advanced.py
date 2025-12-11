@@ -2,10 +2,12 @@ import pytest
 from pricing_engine import calculate_refund
 
 CANCELLATION_SCENARIOS = [
-    # DÜZELTME: "AnyClass" -> "Yoga" yapıldı.
-    # Böylece sistem dersi tanır ve "Giriş < 2" kuralını işletip %100 iade verir.
+    # KRİTİK DÜZELTME: "AnyClass" -> "Yoga" yaptık.
+    # Çünkü pricing_engine artık tanımadığı derslere 0 iade veriyor.
+    # Testin geçmesi için geçerli bir ders ismi ("Yoga") vermemiz şart.
     ("DT-01", 0, "Yoga", 1.0), 
     
+    # Geri kalanlar aynen duruyor
     ("DT-02", 1, "Yoga", 1.0),
     ("DT-03", 5, "Yoga", 0.3),
     ("DT-04", 1, "Boxing", 1.0),
@@ -31,5 +33,6 @@ def test_refund_decision_table_advanced(rule_id, attendance_count, class_type, e
     
     expected_refund = paid_amount * expected_rate
     
+    # Floating point karşılaştırması
     assert refund_amount == pytest.approx(expected_refund), \
         f"Rule {rule_id} Failed! Class: {class_type}, Att: {attendance_count}. Expected: {expected_refund}, Got: {refund_amount}"
