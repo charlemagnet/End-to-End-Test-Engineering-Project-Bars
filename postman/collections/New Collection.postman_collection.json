@@ -1,0 +1,88 @@
+{
+  "info": {
+    "_postman_id": "049eab77-2f2a-49e0-8a3b-0f6ebcf516ef",
+    "name": "Fitness Project Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "1. Member Management",
+      "item": [
+        {
+          "name": "Add Request",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "id": "17d59379-fb79-4ae8-ad73-f21fa0b900db",
+                "exec": [
+                  ""
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "id": "48a82a24-a5fd-43e7-9980-66ca17186a21",
+                "exec": [
+                  "pm.test(\"Status code is 201\", function () {\r",
+                  "    pm.response.to.have.status(201);\r",
+                  "});\r",
+                  "// Dönen ID'yi sonraki testlerde kullanmak için değişkene atıyoruz\r",
+                  "var jsonData = pm.response.json();\r",
+                  "pm.environment.set(\"member_id_yoga\", jsonData.member_id);"
+                ],
+                "type": "text/javascript",
+                "packages": {},
+                "requests": {}
+              }
+            }
+          ],
+          "id": "93097f38-f0eb-4a62-b723-0e5c736f75cc",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/members",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "members"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "id": "bfd8cda0-f1df-49da-b01a-15bff00e810d"
+    },
+    {
+      "name": "2. Pricing Logic",
+      "item": [],
+      "id": "42172a84-bbbd-4d8b-a8d7-f4512d5f42ad"
+    },
+    {
+      "name": "3. Reservations",
+      "item": [],
+      "id": "be9a0ad1-6b3b-468b-a2c8-bccd733b3035"
+    },
+    {
+      "name": "4. Cancellations",
+      "item": [],
+      "id": "2f04e245-9e19-421d-8226-83474d6bfcaa"
+    }
+  ]
+}
