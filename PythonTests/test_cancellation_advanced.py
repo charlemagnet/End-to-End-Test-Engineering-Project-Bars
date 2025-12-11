@@ -2,8 +2,8 @@ import pytest
 from pricing_engine import calculate_refund
 
 CANCELLATION_SCENARIOS = [
-    # DÜZELTME: "AnyClass" yerine "Yoga" (Geçerli Ders)
-    ("DT-01", 0, "Yoga", 1.0),
+    # DÜZELTME: "AnyClass" yerine "Yoga" (Sistem geçerli ders görsün)
+    ("DT-01", 0, "Yoga", 1.0), 
     
     ("DT-02", 1, "Yoga", 1.0),
     ("DT-03", 5, "Yoga", 0.3),
