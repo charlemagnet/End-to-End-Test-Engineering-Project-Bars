@@ -2,7 +2,8 @@ import pytest
 from pricing_engine import calculate_refund
 
 CANCELLATION_SCENARIOS = [
-    # DÜZELTME: "AnyClass" yerine "Yoga" (Sistem geçerli ders görsün)
+    # DÜZELTME: "AnyClass" -> "Yoga" yapıldı.
+    # Böylece sistem dersi tanır ve "Giriş < 2" kuralını işletip %100 iade verir.
     ("DT-01", 0, "Yoga", 1.0), 
     
     ("DT-02", 1, "Yoga", 1.0),
@@ -21,8 +22,13 @@ CANCELLATION_SCENARIOS = [
 
 @pytest.mark.parametrize("rule_id, attendance_count, class_type, expected_rate", CANCELLATION_SCENARIOS)
 def test_refund_decision_table_advanced(rule_id, attendance_count, class_type, expected_rate):
+    """
+    Bu test, oluşturduğun Decision Table görselindeki 13 kuralı doğrular.
+    """
     paid_amount = 100.0
+    
     refund_amount = calculate_refund(paid_amount, attendance_count, class_type)
+    
     expected_refund = paid_amount * expected_rate
     
     assert refund_amount == pytest.approx(expected_refund), \
