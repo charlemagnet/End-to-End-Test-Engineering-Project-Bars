@@ -28,14 +28,20 @@ jobs:
     - name: Install Dependencies
       run: |
         python -m pip install --upgrade pip
+        # Eğer requirements.txt varsa yükle, yoksa manuel ekle
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+        # Garanti olsun diye test araçlarını ayrıca yüklüyoruz
+        pip install pytest pytest-cov pytest-mock hypothesis mongomock fastapi uvicorn requests pymongo tabulate pandas matplotlib
 
     # 1. Aşama: Unit Testler (Pytest)
     - name: Run Tests with Pytest & Coverage
       env:
         MONGO_URL: "mongodb://localhost:27017"
+        # KRİTİK DÜZELTME 1: Python'a "Modülleri şu anki klasörde ara" diyoruz
+        PYTHONPATH: .
       run: |
-        pytest -v --cov=. --cov-report=term-missing
+        # KRİTİK DÜZELTME 2: 'python -m pytest' kullanarak path sorununu aşıyoruz
+        python -m pytest -v --cov=. --cov-report=term-missing
 
     # 2. Aşama: API Testleri (Newman)
     - name: Install Newman
@@ -44,6 +50,7 @@ jobs:
     - name: Run API Server in Background
       env:
         MONGO_URL: "mongodb://localhost:27017"
+        PYTHONPATH: .
       run: |
         # Sunucuyu arka planda başlat
         python -m uvicorn main:app --host 127.0.0.1 --port 8000 &
@@ -51,5 +58,4 @@ jobs:
 
     - name: Run Postman Collection
       run: |
-        # Dosya isminde boşluk olduğu için tırnak işareti kullanıyoruz
         newman run "postman/collections/New Collection.postman_collection.json" --env-var base_url=http://127.0.0.1:8000
