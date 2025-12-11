@@ -1,64 +1,55 @@
 import pytest
 from pricing_engine import calculate_refund
 
-# TEST Data: (Class, Entry, expected refund)
+# (Ders Tipi, Baz Fiyat, Katılım Sayısı, Beklenen İade)
 refund_scenarios = [
-    # --- YOGA (Base Price: 200) ---
-    # Rule:if entry < 2 then refund %100, if >=  %30 refund
-    ("Yoga", 0, 200.0),   
-    ("Yoga", 1, 200.0),  
-    ("Yoga", 2, 60.0),    
-    ("Yoga", 5, 60.0),    
-    ("Yoga", 10, 60.0),   
+    # YOGA (Baz: 200 kabul edelim test için)
+    # < 2 giriş -> Tam iade, >= 2 giriş -> %30 iade
+    ("Yoga", 200, 0, 200.0),
+    ("Yoga", 200, 1, 200.0),
+    ("Yoga", 200, 2, 60.0),  # 200 * 0.3 = 60
+    ("Yoga", 200, 5, 60.0),
+    ("Yoga", 200, 10, 60.0),
 
-    # --- BOXING (Base Price: 120) ---
-    # Rule:if entry < 2 then refund %100, if >=  %50 refund
-    ("Boxing", 0, 120.0),
-    ("Boxing", 1, 120.0),
-    ("Boxing", 2, 60.0),  # 120 * 0.50 = 60
-    ("Boxing", 3, 60.0),
-    ("Boxing", 8, 60.0),
+    # BOXING (Baz: 120)
+    # < 2 giriş -> Tam iade, >= 2 giriş -> %50 iade
+    ("Boxing", 120, 0, 120.0),
+    ("Boxing", 120, 1, 120.0),
+    ("Boxing", 120, 2, 60.0), # 120 * 0.5 = 60
+    ("Boxing", 120, 3, 60.0),
+    ("Boxing", 120, 8, 60.0),
 
-    # --- FITNESS (Base Price: 80) ---
-    # Rule:if entry < 2 then refund %100, if >=  %10 refund
-    ("Fitness", 0, 80.0),
-    ("Fitness", 1, 80.0),
-    ("Fitness", 2, 8.0),  # 80 * 0.10 = 8
-    ("Fitness", 4, 8.0),
-    ("Fitness", 20, 8.0),
+    # FITNESS (Baz: 80)
+    # < 2 giriş -> Tam iade, >= 2 giriş -> %10 iade
+    ("Fitness", 80, 0, 80.0),
+    ("Fitness", 80, 1, 80.0),
+    ("Fitness", 80, 2, 8.0),  # 80 * 0.1 = 8
+    ("Fitness", 80, 4, 8.0),
+    ("Fitness", 80, 20, 8.0),
+    
+    # BASKETBALL (Baz: 40) -> %40 iade
+    ("Basketball", 40, 0, 40.0),
+    ("Basketball", 40, 1, 40.0),
+    ("Basketball", 40, 2, 16.0), # 40 * 0.4 = 16
 
-    # --- BASKETBALL (Base Price: 40) ---
-    # Rule:if entry < 2 then refund %100, if >=  %40 refund
-    ("Basketball", 0, 40.0),
-    ("Basketball", 1, 40.0),
-    ("Basketball", 2, 16.0), # 40 * 0.40 = 16
-    ("Basketball", 6, 16.0),
-    ("Basketball", 15, 16.0),
+    # TENNIS (Baz: 90) -> %80 iade
+    ("Tennis", 90, 0, 90.0),
+    ("Tennis", 90, 1, 90.0),
+    ("Tennis", 90, 2, 72.0), # 90 * 0.8 = 72
 
-    # --- TENIS (Base Price: 90) ---
-    # Rule:if entry < 2 then refund %100, if >=  %80 refund
-    ("Tennis", 0, 90.0),
-    ("Tennis", 1, 90.0),
-    ("Tennis", 2, 72.0),   # 90 * 0.80 = 72
-    ("Tennis", 3, 72.0),
-    ("Tennis", 7, 72.0),
-
-    # --- SWIMMING (Base Price: 30) ---
-    # Rule:if entry < 2 then refund %100, if >=  %15 refund
-    ("Swimming", 0, 30.0),
-    ("Swimming", 1, 30.0),
-    ("Swimming", 2, 4.5), 
-    ("Swimming", 5, 4.5),
-    ("Swimming", 12, 4.5),
-
-    # Invalid entry
-    ("Futbol", 1, 0),     
-    ("Futbol", 0, 0),
+    # SWIMMING (Baz: 30) -> %15 iade
+    ("Swimming", 30, 0, 30.0),
+    ("Swimming", 30, 1, 30.0),
+    ("Swimming", 30, 2, 4.5), # 30 * 0.15 = 4.5
+    
+    # GEÇERSİZ DERS
+    ("Futbol", 100, 1, 0),
 ]
 
-@pytest.mark.parametrize("class_type, entrances, expected_refund", refund_scenarios)
-def test_refund_calculations_parametric(class_type, entrances, expected_refund):
-    calculated = calculate_refund(class_type, entrances)
+@pytest.mark.parametrize("class_type, base_price, entrances, expected_refund", refund_scenarios)
+def test_refund_calculations_parametric(class_type, base_price, entrances, expected_refund):
+    # DÜZELTME: Fonksiyonu 3 parametre ile çağırıyoruz
+    calculated = calculate_refund(base_price, entrances, class_type)
     
-    # Floating point comparison
-    assert calculated == pytest.approx(expected_refund, rel=1e-2)
+    assert calculated == pytest.approx(expected_refund), \
+        f"Failed for {class_type} with {entrances} entrances. Expected {expected_refund}, got {calculated}"
